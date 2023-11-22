@@ -21,6 +21,7 @@ import datetime
 import time
 import sys
 import copy
+import os
 
 from modules.helper import *
 from modules.exceptions import *
@@ -554,10 +555,14 @@ def main(path_stimfile):
                 # set the resolution of the stimulus which is defined by the minimal movement posible, which is the lenght of movement given the speed and the framerate
                 # ideally this should be an integer that should be able to divide without residue the final matrix size
                 
-                step = int(float(stimdict['frame_duration'])*float(stimdict['speed']))
+                #step = int(float(stimdict['frame_duration'])*float(stimdict['speed']))
 
-                if 80%step != 0:
-                    raise Exception('in the current implementation, the code only accepts divisors of 80 as step')
+                step = 0.05*20 # maybe this should be hardcoded
+                minimum_step = step*np.cos(np.deg2rad(45))
+                allowed_box_sizes = [2,4,5,8,10,16] # more can be added
+
+                # if 80%step != 0:
+                #     raise Exception('in the current implementation, the code only accepts divisors of 80 as step')
                 
                 # set posible steps in units of stimulus pixels (the real step choice is -1*step,0,1*step)
                 step_choices = [-1,0,1]
@@ -570,21 +575,34 @@ def main(path_stimfile):
 
                 frames=number_of_frames
                 
-                if 80%box_size_x == 0 and 80%box_size_y ==0:                
-                            x_dim = int(80/box_size_x) #80 is the size of the screen in degrees, for now this is hardcoded
-                            y_dim = int(80/box_size_y)
-                else:
-                    raise Exception ('in the current implementation, the code only accepts divisors of 80 as box_size')
+                # if 80%box_size_x == 0 and 80%box_size_y ==0:                
+                #             x_dim = int(80/box_size_x) #80 is the size of the screen in degrees, for now this is hardcoded
+                #             y_dim = int(80/box_size_y)
+                # else:
+                #     raise Exception ('in the current implementation, the code only accepts divisors of 80 as box_size')
                 
-                try:
-                    np.random.seed(stimdict["seed"])
-                    print(stimdict["seed"])
-                except:
-                    np.random.seed(3)
-                    print(3)
-                #test = stimdict["Test"]
+                x_dim = int((max_angle_from_center(9,5.3)*2)//box_size_x)
+                y_dim = int((max_angle_from_center(9,5.3)*2)//box_size_y)
 
-                final_size=int(80/step)
+                minimum_size_step_based = int((max_angle_from_center(9,5.3)*2)//step)
+                minimum_size_diag_step = int((max_angle_from_center(9,5.3)*2)//minimum_step)
+                minimum_size_diag_step = 120
+
+                minimum_sizex=np.lcm.reduce([minimum_size_step_based,120,x_dim]) # at box size 5, speed 20 and refresh rate 0.05 minimum_size_diag_step can be approx to 120
+                minimum_sizey=np.lcm.reduce([minimum_size_step_based,120,y_dim])
+
+
+
+
+                # try:
+                #     np.random.seed(stimdict["seed"])
+                #     print(stimdict["seed"])
+                # except:
+                #     np.random.seed(3)
+                #     print(3)
+                # #test = stimdict["Test"]
+
+                # final_size=int(80/step)
 
                 
                 if stimdict['persistent_movement']: # if we want the field to move consistently for a number of frames
@@ -599,13 +617,14 @@ def main(path_stimfile):
                     
                     moves[0,:] = moves1
                     moves[1,:] = moves2
-                    moves=np.cumsum((moves),axis=1)
+                    
 
                     # choose persistent luminances to enhance the motion signal relative to the luminance one
 
                     persistant_lum = random_persistent_behavior_vector([5],number_of_frames,choices_of_duration)
                     noise_texture = random_persistent_values(persistant_lum,[3],number_of_frames,grayvalues,size=[x_dim,y_dim])
                     noise_texture = noise_texture[0]
+                    moves=np.cumsum((moves),axis=1)
                 else:
 
                     for i in range(0,2): # x,y shift arrays
@@ -627,20 +646,29 @@ def main(path_stimfile):
                 
                 #upscale the stim array to be able to shift it in small steps
                 
-                minimum_size_based_on_step = final_size
-                minimum_size_based_on_boxsizex = x_dim
-                minimum_size_based_on_boxsizey = y_dim
+                # minimum_size_based_on_step = final_size
+                # minimum_size_based_on_boxsizex = x_dim
+                # minimum_size_based_on_boxsizey = y_dim
 
-                minimum_sizex = np.lcm(minimum_size_based_on_step,minimum_size_based_on_boxsizex)
-                minimum_sizey = np.lcm(minimum_size_based_on_step,minimum_size_based_on_boxsizey)
+                # minimum_sizex = np.lcm(minimum_size_based_on_step,minimum_size_based_on_boxsizex)
+                # minimum_sizey = np.lcm(minimum_size_based_on_step,minimum_size_based_on_boxsizey)
 
-                upscale_factor_x = minimum_sizex/x_dim
-                upscale_factor_y = minimum_sizey/y_dim
+                # upscale_factor_x = minimum_sizex/x_dim
+                # upscale_factor_y = minimum_sizey/y_dim
+
+                # resolutionx = 80/minimum_sizex
+                # resolutiony = 80/minimum_sizey
+                # step_multiplierx = step/resolutionx
+                # step_multipliery = step/resolutiony
+
+                upscale_factor_x = int(minimum_sizex/x_dim)
+                upscale_factor_y = int(minimum_sizey/y_dim)
 
                 resolutionx = 80/minimum_sizex
                 resolutiony = 80/minimum_sizey
-                step_multiplierx = step/resolutionx
-                step_multipliery = step/resolutiony
+                step_multiplierx = int(step/resolutionx)
+                step_multipliery = int(step/resolutiony)
+
 
                 noise_texture = np.repeat(noise_texture,upscale_factor_x,axis=1) # this brings the size of the matrix to the 80*80 size, then the shifts will be in the right scale
                 noise_texture = np.repeat(noise_texture,upscale_factor_y,axis=2)
@@ -1045,6 +1073,8 @@ def main(path_stimfile):
 
     # Stop
     print ("Write out ... close ...")
+    if stimdict['print']:
+         win.saveMovieFrames(os.path.split(path_stimfile)[0] + "\\pics\\frame.tif")
     win.close()
     core.quit()
 

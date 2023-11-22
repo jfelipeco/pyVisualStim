@@ -791,13 +791,13 @@ def sinusoid_grating_noise(frames,stim_texture,stimdict, epoch, window, global_c
             
             out.framenumber = out.framenumber + 1
 
-            if stimdict['print'] == False:
-                win.flip()
-            else:
-                win.flip()
-                win.getMovieFrame()
-        if stimdict['print'] == True:    
-            win.saveMovieFrames("C:\\#Coding\\pyVisualStim\\stimuli_collection\\8.grating_WN\\pics\\_" + str(frameN) + ".tif")
+            
+            win.flip()
+
+        if stimdict['print'] == True:
+            win.getMovieFrame()
+        #if stimdict['print'] == True:    
+        #    win.saveMovieFrames("C:\\#Coding\\pyVisualStim\\stimuli_collection\\8.grating_WN\\pics\\_" + str(frameN) + ".tif")
                     
 
 def dotty_grating(_useNoise,_useTex,viewpos,bg_ls,stim_texture,stimdict, epoch, window, global_clock, duration_clock, outFile, out, grating,dots, dlpOK, taskHandle=None, data=0, lastDataFrame=0, lastDataFrameStartTime=0):

@@ -20,6 +20,7 @@ import datetime
 import time
 import sys
 import copy
+import scipy.fft as fft
 
 #from modules.helper import *
 #from modules.exceptions import *
@@ -124,7 +125,7 @@ def max_angle_from_center(screen_width, distance):
 persistant = True
 
 grayvalues = np.array([0,2.0]).astype('float64')
-grayvalues = np.where(grayvalues>-1,(grayvalues*63.0/255.0)-1,-1)
+#grayvalues = np.where(grayvalues>-1,(grayvalues*63.0/255.0)-1,-1)
 #print(grayvalues)
 number_of_frames=15000
 stim_texture_ls = list()
@@ -137,6 +138,7 @@ moves = np.zeros((2, number_of_frames)) # 2 directions: x and y. 15000 random ch
 step = 0.05*20 # maybe this should be hardcoded
 minimum_step = step*np.cos(np.deg2rad(45))
 
+allowed_box_sizes = [2,4,5,8,10,16] # more can be added
 
 #if 80%step != 0:
 #    raise Exception('in the current implementation, the code only accepts divisors of 80 as step')
@@ -147,7 +149,7 @@ step_choices = [-1,0,1]
 
 # set stimuli dimensions
 
-box_size_x = 5 # first guess: this number should be around 20 
+box_size_x = 5 # first guess: this number should be around 20. this number should also be harcoded
 box_size_y = 5
 
 frames=number_of_frames
@@ -164,10 +166,13 @@ y_dim = int((max_angle_from_center(9,5.3)*2)//box_size_y)
 
 minimum_size_step_based = int((max_angle_from_center(9,5.3)*2)//step)
 minimum_size_diag_step = int((max_angle_from_center(9,5.3)*2)//minimum_step)
+minimum_size_diag_step = 120
+
+minimum_sizex=np.lcm.reduce([minimum_size_step_based,120,x_dim]) # at box size 5, speed 20 and refresh rate 0.05 minimum_size_diag_step can be approx to 120
+minimum_sizey=np.lcm.reduce([minimum_size_step_based,120,y_dim])
 
 
-
-diagonal_upscale_factor = 1/(minimum_step)
+#diagonal_upscale_factor = 1/(minimum_step)
 
 #np.random.seed(3)
 
@@ -215,20 +220,20 @@ else:
 
 #upscale the stim array to be able to shift with a step resolution
 
-minimum_size_based_on_step = final_size
-minimum_size_based_on_boxsizex = x_dim
-minimum_size_based_on_boxsizey = y_dim
+# minimum_size_based_on_step = final_size
+# minimum_size_based_on_boxsizex = x_dim
+# minimum_size_based_on_boxsizey = y_dim
 
-minimum_sizex = np.lcm(minimum_size_based_on_step,minimum_size_based_on_boxsizex)
-minimum_sizey = np.lcm(minimum_size_based_on_step,minimum_size_based_on_boxsizey)
+# minimum_sizex = np.lcm(minimum_size_based_on_step,minimum_size_based_on_boxsizex)
+# minimum_sizey = np.lcm(minimum_size_based_on_step,minimum_size_based_on_boxsizey)
 
-upscale_factor_x = minimum_sizex/x_dim
-upscale_factor_y = minimum_sizey/y_dim
+upscale_factor_x = int(minimum_sizex/x_dim)
+upscale_factor_y = int(minimum_sizey/y_dim)
 
 resolutionx = 80/minimum_sizex
 resolutiony = 80/minimum_sizey
-step_multiplierx = step/resolutionx
-step_multipliery = step/resolutiony
+step_multiplierx = int(step/resolutionx)
+step_multipliery = int(step/resolutiony)
 
 noise_texture = np.repeat(noise_texture,int(upscale_factor_x),axis=1) # this brings the size of the matrix to the 80*80 size, then the shifts will be in the right scale
 noise_texture = np.repeat(noise_texture,int(upscale_factor_y),axis=2)
@@ -247,7 +252,7 @@ for frame in range(int(number_of_frames)):
     #noise_texture[frame,:,:]=np.roll(noise_texture[frame,:,:], frame*0,axis=1)
     ##end of test
     
-
+pepe
 #plot distributions 
 
 
